@@ -3,41 +3,18 @@
     <div class="wrapper">
         <div class="mx-auto max-w-8xl px-4 py-6 sm:px-6 lg:px-8">
 
-            <div class="bg-gray-100 p-4 mb-4 rounded-lg shadow-md flex items-center justify-between w-full">
-                <h1 class="text-lg font-semibold text-gray-800">Opportunities Overview</h1>
-
-
-
-                <div class="flex flex-col ml-96">
-
-                    <!--
-                        <label for="filterByUser" class="text-sm font-medium text-gray-700">
-                            <b>Filter By User</b>
-                        </label>
-
-                        <div class="w-52 rounded-2xl">
-                            <select name="filterByUser" id="filterByUser" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                                <option value="">--Select User--</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->ghl_user_id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        -->
-
-                </div>
-            </div>
+            @include('admin.partials.opportunityTab')
             <div id="pipeline-container" class="flex flex-wrap ">
 
                 @foreach ($pipelines as $pipeline)
                     <div class="w-full sm:w-1/4 lg:w-1/5 p-2">
-                        <div class="rounded-2xl bg-white shadow cursor-pointer stage-card"
+                        <div class="rounded-2xl bg-white shadow cursor-pointer h-[120px] stage-card"
                             data-pipeline-id="{{ $pipeline->pipeline_id }}" data-pipeline-name="{{ $pipeline->pipeline_name }}">
                             <div class="p-5">
                                 <div class="flex items-center">
                                     <div>
-                                        <p class="m-0 text-sm text-gray-900"><b>{{ $pipeline->pipeline_name }}</b></p>
-                                        <div class="mt-1 flex items-center gap-4">
+                                      <div class="h-10"><p class="text-sm text-gray-900"><b>{{ $pipeline->pipeline_name }}</b></p></div>
+                                        <div class="mt-0 flex items-center gap-4">
                                             <h5 class="m-0 text-[22px] font-extrabold text-slate-500">
                                                 ${{ number_format($pipeline->total_monetary_value, 2) }}
                                             </h5>
@@ -53,6 +30,12 @@
                     </div>
                 @endforeach
             </div>
+            <div class="flex items-center gap-4 mb-4">
+                <label for="dateRange" class="text-sm font-medium text-gray-700"><b>Date</b></label>
+                <input type="text" id="dateRange"
+                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm"
+                    placeholder="Select Date" readonly />
+            </div>
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 <div class="lg:col-span-4">
                     <div class="rounded-2xl bg-white shadow">
@@ -60,7 +43,7 @@
                             <h4 class="text-lg font-bold text-gray-800">Opportunities Status(Close / Open / Won)</h4>
                         </div>
                         <div class="p-5">
-                            <div id="pieChart"></div>
+                            <div id="pieChart" style="width:100%; height: 440px;"></div>
                         </div>
                     </div>
                 </div>
@@ -74,7 +57,7 @@
                                 </h2>
                                 <select name="pipelineStages" id="pipelineStages"
                                     class="w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 
-                                                                                             shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition truncate">
+                                                                                                                                     shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition truncate">
                                     <option value="">-- Select Pipeline --</option>
                                     @foreach ($totalPiplines as $pipeline)
                                         <option value="{{ $pipeline->pipeline_id }}">{{ $pipeline->name }} </option>
@@ -94,11 +77,11 @@
                             <div class="flex flex-col sm:flex-col sm:items-center sm:justify-between mb-4 gap-4">
                                 <h2
                                     class="text-base sm:text-base md:text-base font-bold text-gray-800 text-center sm:text-left">
-                                    Pipeline-Wise Stages Status
+                                    Stages Opportunities Status
                                 </h2>
                                 <select id="pipelineSelect"
                                     class="w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 
-                                            shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition truncate">
+                                                                                    shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition truncate">
                                     <option value="">-- Select Pipeline --</option>
                                     @foreach ($PipelinesIds as $pipeline)
                                         <option value="{{ $pipeline->id }}">{{ $pipeline->name }}</option>
@@ -117,30 +100,30 @@
 
             <!-- <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
 
-                    <div class="lg:col-span-6">
-                        <div class="rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div class="p-4 sm:p-6">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h2 class="text-base font-bold text-gray-800">Monthly Opportunities</h2>
-                                    <div class="text-sm font-semibold text-blue-600" id="monthlyChartTotalOpportunities"></div>
-                                </div>
-                                <div id="chart-opportunities-month"></div>
-                            </div>
-                        </div>
-                    </div>
+                                                            <div class="lg:col-span-6">
+                                                                <div class="rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                                                    <div class="p-4 sm:p-6">
+                                                                        <div class="flex items-center justify-between mb-4">
+                                                                            <h2 class="text-base font-bold text-gray-800">Monthly Opportunities</h2>
+                                                                            <div class="text-sm font-semibold text-blue-600" id="monthlyChartTotalOpportunities"></div>
+                                                                        </div>
+                                                                        <div id="chart-opportunities-month"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
 
 
-                    <div class="lg:col-span-6">
-                        <div class="rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <div class="p-4 sm:p-6">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h2 class="text-base font-bold text-gray-800">Pipeline Velocity</h2>
-                                </div>
-                                <div id="pipelineVelocityChart"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
+                                                            <div class="lg:col-span-6">
+                                                                <div class="rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                                                    <div class="p-4 sm:p-6">
+                                                                        <div class="flex items-center justify-between mb-4">
+                                                                            <h2 class="text-base font-bold text-gray-800">Pipeline Velocity</h2>
+                                                                        </div>
+                                                                        <div id="pipelineVelocityChart"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div> -->
         </div>
     </div>
     <div id="stageModal"
@@ -181,7 +164,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
@@ -194,8 +176,34 @@
 
 
     <script>
+
+        // daterangepicker will be initialized inside document.ready (after plugin loads)
+
         $(document).ready(function () {
             var userId = null;
+            // Initialize date range picker after plugin is loaded
+            if ($.fn.daterangepicker) {
+                // Initialize as single date picker (select one date)
+                $('#dateRange').daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    singleDatePicker: true,
+                    locale: { cancelLabel: 'Clear' }
+                });
+
+                $('#dateRange').on('apply.daterangepicker', function (ev, picker) {
+                    // Set single date in YYYY-MM-DD
+                    $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                    updateAllCharts(); // refresh charts with selected date
+                });
+
+                $('#dateRange').on('cancel.daterangepicker', function (ev, picker) {
+                    $(this).val('');
+                    updateAllCharts(); // refresh charts with no date filter
+                });
+            } else {
+                console.warn('daterangepicker plugin not available; date filter will not initialize.');
+            }
             var pipelineDonutChart = null;
             var chart = null;
             var piechart = null;
@@ -234,22 +242,88 @@
              * Master function -> fetches all dashboard data
              */
             function updateAllCharts() {
+                let dateRange = $('#dateRange').val();
+                let startDate = null;
+                let endDate = null;
+
+                if (dateRange) {
+                    // single date selected; use as both start and end
+                    startDate = dateRange;
+                    endDate = dateRange;
+                }
+                const url = "{{ route('admin.updateAllCharts') }}";
+                console.log('updateAllCharts ->', { url, userId: userId || null, startDate, endDate });
+
                 $.ajax({
-                    url: "{{ route('admin.updateAllCharts') }}",
+                    url: url,
                     method: "GET",
+                    dataType: 'json',
                     data: {
                         userId: userId || null,
+                        startDate: startDate,
+                        endDate: endDate
+                    },
+                    beforeSend: function () {
+                        // visual debug
+                        console.debug('Sending updateAllCharts request', { startDate, endDate });
                     },
                     success: function (response) {
+                        console.log('updateAllCharts -> success', response);
                         renderPipelineCards(response.pipelines);
                         renderMonthlyChart(response.monthlyOpportunites);
                         renderPieChart(response.openTotal, response.closedTotal, response.wonTotal);
                         renderPiplineVelocity(response.results);
+                        // ensure pipeline-specific charts respect the active date filter
+                        try {
+                            updatePipelineSelectCharts();
+                        } catch (e) {
+                            console.debug('updatePipelineSelectCharts not available yet', e);
+                        }
                     },
-                    error: function (xhr) {
-                        console.error("Error loading chart data:", xhr.responseText);
+                    error: function (xhr, status, err) {
+                        console.error('updateAllCharts -> error', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            responseText: xhr.responseText,
+                            error: err,
+                            jqStatus: status
+                        });
+                        if (xhr.status === 419) {
+                            console.warn('CSRF token mismatch or session expired. Try reloading the page.');
+                        }
                     },
                 });
+            }
+
+            // Expose to global so handlers outside this ready block can call it
+            window.updateAllCharts = updateAllCharts;
+
+            // Refresh pipeline select-based charts (pipelineStages and pipelineSelect)
+            function updatePipelineSelectCharts() {
+                // Trigger the pipelineStages change handler so it will include date filters
+                const pipelineStagesVal = $('#pipelineStages').val();
+                if (pipelineStagesVal) {
+                    $('#pipelineStages').trigger('change');
+                }
+
+                // Trigger pipelineSelect's change to refresh stages donut (if selected)
+                const pipelineSelectEl = document.getElementById('pipelineSelect');
+                if (pipelineSelectEl && pipelineSelectEl.value) {
+                    pipelineSelectEl.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // Auto-select the first pipeline in both selects (if any) and trigger change to render default charts
+            const firstPipelineStages = $('#pipelineStages option:not([value=""])').first().val();
+            if (firstPipelineStages) {
+                $('#pipelineStages').val(firstPipelineStages).trigger('change');
+            }
+
+            // Defer selecting and triggering pipelineSelect until its handler is attached
+            const firstPipelineSelect = $('#pipelineSelect option:not([value=""])').first().val();
+            if (firstPipelineSelect) {
+                // set the value but do not trigger change here; the handler may not be attached yet
+                $('#pipelineSelect').val(firstPipelineSelect);
             }
 
             /**
@@ -261,29 +335,29 @@
 
                 pipelines.forEach(function (stage) {
                     container.append(`
-                                                                        <div class="w-full sm:w-1/4 lg:w-1/5 p-2">
-                                                                            <div class="rounded-2xl bg-white shadow cursor-pointer stage-card" 
-                                                                                data-pipeline-id="${stage.pipeline_id}"
-                                                                                data-pipeline-name="${stage.pipeline_name}">
-                                                                                <div class="p-5">
-                                                                                    <div class="flex items-center">
-                                                                                        <div>
-                                                                                            <p class="m-0 text-sm text-gray-900">${stage.pipeline_name}</p>
-                                                                                            <div class="mt-1 flex items-center gap-3">
-                                                                                                <h5 class="m-0 text-[22px] font-extrabold text-slate-500">
-                                                                                                    $${Number(stage.total_monetary_value).toLocaleString()}
-                                                                                                </h5>
-                                                                                                <p class="m-0 text-sm font-bold text-blue-600" 
-                                                                                                   data-pipline-id="${stage.pipeline_id}">
-                                                                                                    ${stage.total_stages} stages
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    `);
+                                                                                                                <div class="w-full sm:w-1/4 lg:w-1/5 p-2">
+                                                                                                                    <div class="rounded-2xl bg-white shadow cursor-pointer stage-card" 
+                                                                                                                        data-pipeline-id="${stage.pipeline_id}"
+                                                                                                                        data-pipeline-name="${stage.pipeline_name}">
+                                                                                                                        <div class="p-5">
+                                                                                                                            <div class="flex items-center">
+                                                                                                                                <div>
+                                                                                                                                    <p class="m-0 text-sm text-gray-900">${stage.pipeline_name}</p>
+                                                                                                                                    <div class="mt-1 flex items-center gap-3">
+                                                                                                                                        <h5 class="m-0 text-[22px] font-extrabold text-slate-500">
+                                                                                                                                            $${Number(stage.total_monetary_value).toLocaleString()}
+                                                                                                                                        </h5>
+                                                                                                                                        <p class="m-0 text-sm font-bold text-blue-600" 
+                                                                                                                                           data-pipline-id="${stage.pipeline_id}">
+                                                                                                                                            ${stage.total_stages} stages
+                                                                                                                                        </p>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            `);
                 });
             }
 
@@ -310,11 +384,11 @@
                             if (index < response.length - 1) {
                                 const nextStage = response[index + 1];
                                 $('#modalStages').append(`
-                                                                                    <div class="flex justify-between items-center border-b border-gray-200 py-2">
-                                                                                        <span class="text-gray-1000">${stage.stage_name} → ${nextStage.stage_name}</span>
-                                                                                        <span class="font-bold text-slate-800">${stage.avg_duration_human}</span>
-                                                                                    </div>
-                                                                                `);
+                                                                                                                            <div class="flex justify-between items-center border-b border-gray-200 py-2">
+                                                                                                                                <span class="text-gray-1000">${stage.stage_name} → ${nextStage.stage_name}</span>
+                                                                                                                                <span class="font-bold text-slate-800">${stage.avg_duration_human}</span>
+                                                                                                                            </div>
+                                                                                                                        `);
                             }
                         });
                         // $('#stageModal').removeClass('hidden');
@@ -517,12 +591,23 @@
                     return;
                 }
 
+                // include active date filter when requesting pipeline distribution (single date)
+                let dateRange = $('#dateRange').val();
+                let startDate = null;
+                let endDate = null;
+                if (dateRange) {
+                    startDate = dateRange;
+                    endDate = dateRange;
+                }
+
                 $.ajax({
                     url: "{{ route('admin.pipelineStageDistribution') }}",
                     type: "GET",
                     data: {
                         pipeline_id: pipeline_id,
-                        userId: userId
+                        userId: userId,
+                        startDate: startDate,
+                        endDate: endDate
                     },
                     success: function (response) {
                         if (response.open == 0 && response.won == 0 && response.close == 0) {
@@ -739,34 +824,44 @@
                 return;
             }
 
+            let dr = $('#dateRange').val();
+            let sDate = null;
+            let eDate = null;
+            if (dr) {
+                sDate = dr;
+                eDate = dr;
+            }
+
             fetch("{{ route('admin.pipeline.stages') }}", {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
-                body: JSON.stringify({ pipeline_id: pipelineId })
+                body: JSON.stringify({ pipeline_id: pipelineId, startDate: sDate, endDate: eDate })
             })
                 .then(res => res.json())
                 .then(data => {
-
-
-                    // Prepare chart data
-                    const chartData = data.stages.map(() => 1);
                     const labels = data.stages.map(stage => stage.name);
+                    const chartData = data.stages.map(stage => stage.opportunity_count);
+                    const hasData = chartData.some(v => v > 0);
 
                     if (pipelineDonutChart2) pipelineDonutChart2.destroy();
 
                     const ctx = document.getElementById('pipelineDonut2').getContext('2d');
+
                     pipelineDonutChart2 = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
-                            labels: labels.length ? labels : ['No Stages'],
+                            labels,
                             datasets: [{
-                                data: chartData.length ? chartData : [1],
-                                backgroundColor: labels.length
-                                    ? ['#3b82f6', '#22c55e', '#ef4444', '#f59e0b', '#6366f1', '#ec4899', '#14b8a6', '#8b5cf6']
-                                    : ['#d1d5db'],
+                                data: hasData ? chartData : [],
+                                backgroundColor: [
+                                    '#3b82f6', '#22c55e', '#ef4444', '#f59e0b',
+                                    '#6366f1', '#ec4899', '#14b8a6', '#8b5cf6',
+                                    '#10b981', '#f87171', '#0ea5e9'
+                                ],
                                 borderWidth: 2
                             }]
                         },
@@ -776,23 +871,17 @@
                             plugins: {
                                 legend: {
                                     position: 'bottom',
-                                    labels: {
-                                        padding: 20,
-                                        font: {
-                                            size: 12
-                                        }
-                                    }
+                                    labels: { padding: 20, font: { size: 12 } }
                                 },
                                 tooltip: {
-                                    enabled: true
+                                    callbacks: {
+                                        label: ctx => `${ctx.label}: ${ctx.formattedValue} Opportunities`
+                                    }
                                 },
                                 datalabels: {
                                     color: '#fff',
-                                    font: {
-                                        weight: 'bold',
-                                        size: 14
-                                    },
-                                    formatter: (value) => value > 0 ? value : ''
+                                    font: { weight: 'bold', size: 14 },
+                                    formatter: val => (val > 0 ? val : '')
                                 }
                             }
                         },
@@ -801,26 +890,40 @@
                             {
                                 id: 'centerText',
                                 beforeDraw(chart) {
-                                    const {
-                                        ctx,
-                                        chartArea: {
-                                            width,
-                                            height
-                                        }
-                                    } = chart;
+                                    const { ctx, chartArea: { width, height } } = chart;
                                     ctx.save();
                                     ctx.font = 'bold 18px sans-serif';
                                     ctx.textAlign = 'center';
                                     ctx.fillStyle = '#111827';
-                                    ctx.fillText(data.count || 'No Data', width / 2, height / 2 + 6);
+                                    ctx.fillText(
+                                        hasData ? data.total_opportunities + ' Total' : 'No Data',
+                                        width / 2,
+                                        height / 2 + 6
+                                    );
                                 }
                             }
                         ]
                     });
                 })
+
                 .catch(() => {
                     stageCount.textContent = 'Error fetching stages.';
                 });
         });
+
+        // Ensure pipelineSelect auto-selects the first pipeline AFTER the change handler is attached
+        (function ensurePipelineSelectDefault() {
+            const sel = document.getElementById('pipelineSelect');
+            if (!sel) return;
+            // If nothing is selected, pick the first non-empty option and trigger change
+            if (!sel.value) {
+                const firstOpt = sel.querySelector('option:not([value=""])');
+                if (firstOpt) {
+                    sel.value = firstOpt.value;
+                    sel.dispatchEvent(new Event('change'));
+                }
+            }
+        })();
+
     </script>
 @endsection

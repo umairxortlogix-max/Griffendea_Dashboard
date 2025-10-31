@@ -105,7 +105,7 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-6xl">
-    <div class="grid md:grid-cols-2 gap-8 items-center">
+    <div class="grid md:grid-cols-1 gap-8 items-center">
       <!-- Login Form -->
       <div class="login-card bg-white p-8 max-w-md w-full mx-auto">
         <form class="space-y-6" method="POST" action="{{ route('login') }}">
@@ -117,7 +117,7 @@
               </div>
               <h1 class="text-2xl font-bold navy-text ml-3">{{ env('APP_NAME','Xortlogix Toolkit') }}</h1>
             </div>
-            <h3 class="text-3xl font-bold navy-text">Sign in _H</h3>
+            <h3 class="text-3xl font-bold navy-text">Sign in</h3>
             <p class="text-gray-600 text-sm mt-2 leading-relaxed">
               Sign in to your account and explore a world of possibilities. Your journey begins here.
             </p>
@@ -173,49 +173,49 @@
       </div>
 
       <!-- Content Section -->
-      <div class="max-md:mt-8">
-        <div class="bg-gradient-to-br from-navy to-navy-light rounded-2xl p-8 text-white h-full relative overflow-hidden">
-          <div class="relative z-10">
-            <h2 class="text-3xl font-bold mb-4">Welcome to {{ env('APP_NAME','Xortlogix Toolkit') }}</h2>
-            <p class="text-gray-200 mb-8 max-w-md">
-              Access your personalized analytics, metrics, and business insights in one powerful platform designed for growth and efficiency.
-            </p>
+      <!--<div class="max-md:mt-8">-->
+      <!--  <div class="bg-gradient-to-br from-navy to-navy-light rounded-2xl p-8 text-white h-full relative overflow-hidden">-->
+      <!--    <div class="relative z-10">-->
+      <!--      <h2 class="text-3xl font-bold mb-4">Welcome to {{ env('APP_NAME','Xortlogix Toolkit') }}</h2>-->
+      <!--      <p class="text-gray-200 mb-8 max-w-md">-->
+      <!--        Access your personalized analytics, metrics, and business insights in one powerful platform designed for growth and efficiency.-->
+      <!--      </p>-->
 
-            <div class="space-y-6">
-              <div class="flex items-start">
-                <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-chart-pie"></i>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-lg mb-1">Advanced Analytics</h3>
-                  <p class="text-gray-300 text-sm">Track performance with real-time data visualization</p>
-                </div>
-              </div>
+      <!--      <div class="space-y-6">-->
+      <!--        <div class="flex items-start">-->
+      <!--          <div class="feature-icon mr-4 mt-1">-->
+      <!--            <i class="fas fa-chart-pie"></i>-->
+      <!--          </div>-->
+      <!--          <div>-->
+      <!--            <h3 class="font-semibold text-lg mb-1">Advanced Analytics</h3>-->
+      <!--            <p class="text-gray-300 text-sm">Track performance with real-time data visualization</p>-->
+      <!--          </div>-->
+      <!--        </div>-->
 
-              <div class="flex items-start">
-                <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-shield-alt"></i>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-lg mb-1">Secure Platform</h3>
-                  <p class="text-gray-300 text-sm">Enterprise-grade security for your sensitive data</p>
-                </div>
-              </div>
+      <!--        <div class="flex items-start">-->
+      <!--          <div class="feature-icon mr-4 mt-1">-->
+      <!--            <i class="fas fa-shield-alt"></i>-->
+      <!--          </div>-->
+      <!--          <div>-->
+      <!--            <h3 class="font-semibold text-lg mb-1">Secure Platform</h3>-->
+      <!--            <p class="text-gray-300 text-sm">Enterprise-grade security for your sensitive data</p>-->
+      <!--          </div>-->
+      <!--        </div>-->
 
-              <div class="flex items-start">
-                <div class="feature-icon mr-4 mt-1">
-                  <i class="fas fa-bolt"></i>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-lg mb-1">Fast & Responsive</h3>
-                  <p class="text-gray-300 text-sm">Optimized for speed and seamless user experience</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="decoration"></div>
-        </div>
-      </div>
+      <!--        <div class="flex items-start">-->
+      <!--          <div class="feature-icon mr-4 mt-1">-->
+      <!--            <i class="fas fa-bolt"></i>-->
+      <!--          </div>-->
+      <!--          <div>-->
+      <!--            <h3 class="font-semibold text-lg mb-1">Fast & Responsive</h3>-->
+      <!--            <p class="text-gray-300 text-sm">Optimized for speed and seamless user experience</p>-->
+      <!--          </div>-->
+      <!--        </div>-->
+      <!--      </div>-->
+      <!--    </div>-->
+      <!--    <div class="decoration"></div>-->
+      <!--  </div>-->
+      <!--</div>-->
     </div>
   </div>
 

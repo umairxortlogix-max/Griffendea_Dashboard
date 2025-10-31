@@ -40,4 +40,10 @@ class StageChangeLog extends Model
     {
         return $this->belongsTo(Pipeline::class);
     }
+    protected $casts = [
+    'start_date' => 'datetime',
+    'end_date' => 'datetime',
+];
+    
+
 }

@@ -75,37 +75,105 @@ class WebhookController extends Controller {
     //     $this->noteServices->handle_note( $data );
     // }
 
-    public function handle_webhook( Request $request ) {
-        //dd( '40440' );
-        $data = $request->all();
-        $type = $data[ 'type' ] ?? null;
-         Log::info('data',$data);
-        if ( in_array( $type, [
-            'ContactCreate', 'ContactUpdate', 'ContactDelete',
-            'ContactTagUpdate', 'ContactDndUpdate'
-        ] ) ) {
-            $this->handleContact( $data );
-        } elseif ( in_array( $type, [
-            'OpportunityCreate', 'OpportunityUpdate', 'OpportunityDelete',
-            'OpportunityAssignedToUpdate', 'OpportunityMonetaryValueUpdate',
-            'OpportunityStageUpdate', 'OpportunityStatusUpdate'
-        ] ) ) {
-            $this->handleOpportunity( $data );
-        } elseif ( in_array( $type, [
-            'AppointmentCreate', 'AppointmentUpdate', 'AppointmentDelete'
-        ] ) ) {
-            $this->handleAppointment( $data );
-        } elseif ( in_array( $type, [ 'OutboundMessage', 'InboundMessage' ] ) ) {
-            $this->handleInboundCall( $data );
-        } elseif ( in_array( $type, [ 'NoteCreate', 'NoteDelete', 'NoteUpdate' ] ) ) {
-            $this->handleNote( $data );
-        } else {
-            Log::info( "Webhook type not handled: {$type}" );
+  public function handle_webhook(Request $request)
+{
+    // 🧠 Extract full webhook payload
+    $data = $request->all();
+    $type = $data['type'] ?? null;
+
+    // 📝 Log incoming webhook for debugging
+    Log::info('📩 Incoming Webhook', ['type' => $type, 'data' => $data]);
+
+    try {
+        switch ($type) {
+            /* -------------------------
+             | CONTACT RELATED EVENTS
+             -------------------------- */
+            case 'ContactCreate':
+            case 'ContactUpdate':
+            case 'ContactDelete':
+            case 'ContactTagUpdate':
+            case 'ContactDndUpdate':
+                $this->handleContact($request);
+                break;
+
+            /* -------------------------
+             | OPPORTUNITY RELATED EVENTS
+             -------------------------- */
+            case 'OpportunityCreate':
+            case 'OpportunityUpdate':
+            case 'OpportunityDelete':
+            case 'OpportunityAssignedToUpdate':
+            case 'OpportunityMonetaryValueUpdate':
+            case 'OpportunityStageUpdate':
+            case 'OpportunityStatusUpdate':
+                $this->handleOpportunity($request);
+                break;
+
+            /* -------------------------
+             | APPOINTMENT RELATED EVENTS
+             -------------------------- */
+            case 'AppointmentCreate':
+            case 'AppointmentUpdate':
+            case 'AppointmentDelete':
+                $this->handleAppointment($request);
+                break;
+
+            /* -------------------------
+             | MESSAGE RELATED EVENTS
+             -------------------------- */
+            case 'OutboundMessage':
+            case 'InboundMessage':
+                $this->handleInboundOutbound($request);
+                break;
+
+            /* -------------------------
+             | INVOICE RELATED EVENTS
+             -------------------------- */
+            case 'InvoiceCreate':
+            case 'InvoiceUpdate':
+            case 'InvoiceDelete':
+                $this->handleInvoice($request);
+                break;
+
+            /* -------------------------
+             | NOTE RELATED EVENTS
+             -------------------------- */
+            case 'NoteCreate':
+            case 'NoteDelete':
+            case 'NoteUpdate':
+                // Uncomment if you restore NoteServices
+                // $this->handleNote($request);
+                Log::info('🗒 Note event received (currently disabled).');
+                break;
+
+            /* -------------------------
+             | UNHANDLED EVENTS
+             -------------------------- */
+            default:
+                Log::warning("⚠️ Unhandled webhook type received: {$type}");
+                break;
         }
 
-        return response()->json( [
+        return response()->json([
             'status' => 'success',
-            'type' => $type
-        ] );
+            'message' => 'Webhook processed successfully.',
+            'type' => $type,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Webhook handling failed', [
+            'type' => $type,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Webhook handling failed.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 }

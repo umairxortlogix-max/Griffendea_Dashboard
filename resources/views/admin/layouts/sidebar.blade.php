@@ -29,7 +29,7 @@
                    md:w-auto md:space-x-6 z-50 transition-all duration-300 ease-in-out">
 
             {{-- Dashboard --}}
-            @if (is_role() == 'super_admin' || is_role() == 'admin')
+            @if (is_role() == 'super_admin')
                     <li>
                         <a href="{{ route('admin.dashboard') }}" class="flex items-center px-3 py-2 rounded-lg transition
                                 {{ $currentUrl == route('admin.dashboard')
@@ -51,7 +51,7 @@
                 ? 'bg-white text-[#001B4C] font-semibold shadow-sm'
                 : 'text-white hover:bg-blue-800 hover:text-gray-100' }}">
                             <i class="fas fa-briefcase text-xl w-6 text-center"></i>
-                            <span class="ml-2">Opportunities</span>
+                            <span class="ml-2">Dashboard</span>
                         </a>
                     </li>
             @endif

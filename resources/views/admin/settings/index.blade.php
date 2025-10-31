@@ -62,8 +62,8 @@
                                     <label for="first-name"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Client
                                         secret</label>
-                                    <input type="text" value="{{ $settings['crm_client_secret'] ?? '' }}"
-                                        id="crm_secret_id" name="setting[crm_client_secret]"
+                                    <input type="text" value="{{ $settings['crm_client_secret'] ?? '' }}" id="crm_secret_id"
+                                        name="setting[crm_client_secret]"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Client secret" required>
                                 </div>
@@ -77,66 +77,92 @@
                     </div>
                 </div>
             @endif
-             @if (is_role() == 'admin')
-            <div class="col-span-12 sm:col-span-10 md:col-span-8 xl:col-span-6 xl:col-start-4">
-                <div
-                    class="flex flex-col sm:flex-row justify-between gap-4 w-full p-6 border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
+            @if (is_role() == 'admin')
+                <div class="col-span-12 sm:col-span-10 md:col-span-8 xl:col-span-6 xl:col-start-4">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between gap-4 w-full p-6 border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
                         <a href="{{ CRM::directConnect() }}"
                             class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
                             Connect {{ is_role() == 'super_admin' ? 'Agency' : 'Location' }}/CRM
                         </a>
-                    <button id="sync-location-data-btn"
-                        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
-                        Sync Location Data
-                    </button>
-                </div>
-            </div>
-              @endif
-
-        </div>
- @if (is_role() == 'admin')
-        <!-- <div
-            class="grid grid-cols-12 mt-4 gap-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
-
-                <div class="col-span-12 xl:col-span-6 xl:col-start-4">
-                    <div
-                        class="p-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
-                        <h3 class="mb-4 text-xl font-semibold dark:text-white">Goals Per Agent</h3>
-
-
-                        <form method="POST" action="{{ route('admin.subaccount.policies') }}">
-                            @csrf
-                            <div class="mb-4">
-
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="first-name"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Policies</label>
-                                    <input type="text" value="{{ $policies['policies'] ?? ''}}" name="policies[policies]"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="Policies" required>
-                                </div>
-                            </div>
-
-                            <div class="mb-6">
-
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="first-name"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Premium Goal</label>
-                                    <input type="text"  value="{{$policies['premium']  ?? ''}}" name="policies[premium]"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="Premium" required>
-                                </div>
-                            </div>
-
-                            <div>
-                                <button type="submit"
-                                    class="btn btn-primary text-white bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
-                            </div>
-                        </form>
+                        <button id="sync-location-data-btn"
+                            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
+                            Sync Location Data
+                        </button>
                     </div>
                 </div>
+            @endif
 
-        </div> -->
+        </div>
+        @if (is_role() == 'admin')
+            <!-- <div
+                                    class="grid grid-cols-12 mt-4 gap-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
+
+                                        <div class="col-span-12 xl:col-span-6 xl:col-start-4">
+                                            <div
+                                                class="p-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 sm:p-6 dark:bg-gray-800">
+                                                <h3 class="mb-4 text-xl font-semibold dark:text-white">Goals Per Agent</h3>
+
+
+                                                <form method="POST" action="{{ route('admin.subaccount.policies') }}">
+                                                    @csrf
+                                                    <div class="mb-4">
+
+                                                        <div class="col-span-6 sm:col-span-3">
+                                                            <label for="first-name"
+                                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Policies</label>
+                                                            <input type="text" value="{{ $policies['policies'] ?? ''}}" name="policies[policies]"
+                                                                class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                                                placeholder="Policies" required>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-6">
+
+                                                        <div class="col-span-6 sm:col-span-3">
+                                                            <label for="first-name"
+                                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Premium Goal</label>
+                                                            <input type="text"  value="{{$policies['premium']  ?? ''}}" name="policies[premium]"
+                                                                class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                                                placeholder="Premium" required>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <button type="submit"
+                                                            class="btn btn-primary text-white bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                </div> -->
+
+
+            <!--<div class="max-w-lg mx-auto mt-10 bg-white shadow-lg rounded-2xl p-8">-->
+            <!--    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">Upload JSON File</h2>-->
+
+            <!--    <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">-->
+                    <!-- File Input -->
+            <!--        <div>-->
+            <!--            <label for="jsonFile" class="block text-sm font-medium text-gray-700 mb-2">-->
+            <!--                Choose JSON File-->
+            <!--            </label>-->
+            <!--            <input type="file" id="jsonFile" name="jsonFile" accept=".json" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 -->
+            <!--                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">-->
+            <!--        </div>-->
+
+                    <!-- Submit Button -->
+            <!--        <button type="submit"-->
+            <!--            class="w-full bg-indigo-600 text-white font-medium py-2.5 rounded-lg -->
+            <!--               hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">-->
+            <!--            Upload-->
+            <!--        </button>-->
+            <!--    </form>-->
+
+                <!-- Progress or Message Section -->
+            <!--    <div id="progress" class="mt-6 text-center text-sm text-gray-600"></div>-->
+            <!--</div>-->
         @endif
         @php
             $logo = App\Models\Setting::where('key', 'logo')->first();
@@ -164,7 +190,8 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
                         @endif
                     </div>
-                  <input id="dropzone-file" type="file" class="hidden" accept="image/png, image/jpeg, image/jpg, image/gif, image/svg+xml" />
+                    <input id="dropzone-file" type="file" class="hidden"
+                        accept="image/png, image/jpeg, image/jpg, image/gif, image/svg+xml" />
 
                 </label>
             </div>
@@ -178,107 +205,167 @@
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script>
-        $(document).ready(function() {
-            $('#sync-location-data-btn').click(function() {
+        $(document).ready(function () {
+            $('#sync-location-data-btn').click(function () {
                 $('#custom-loader').css('display', 'flex'); // SHOW loader
 
                 $.ajax({
                     url: "{{ route('crm.syn.location.data') }}",
                     type: 'GET',
-                    success: function(response) {
+                    success: function (response) {
                         $('#custom-loader').css('display', 'flex'); // SHOW loader
                         toastr.success(response.message);
                     },
-                    error: function(xhr) {
+                    error: function (xhr) {
                         alert('Something went wrong. Please try again.');
                         console.log(xhr.responseText);
                     },
-                    complete: function() {
+                    complete: function () {
                         $('#custom-loader').hide(); // HIDE loader
                     }
                 });
             });
         });
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const dropzone = document.getElementById("dropzone");
-        const inputFile = document.getElementById("dropzone-file");
+        document.addEventListener("DOMContentLoaded", function () {
+            const dropzone = document.getElementById("dropzone");
+            const inputFile = document.getElementById("dropzone-file");
 
-        dropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            dropzone.classList.add("bg-gray-200");
-        });
-
-        dropzone.addEventListener("dragleave", () => {
-            dropzone.classList.remove("bg-gray-200");
-        });
-
-        dropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            dropzone.classList.remove("bg-gray-200");
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                uploadImage(files[0]);
-            }
-        });
-
-        inputFile.addEventListener("change", function () {
-            if (this.files.length > 0) {
-                uploadImage(this.files[0]);
-            }
-        });
-
-        function uploadImage(file) {
-            const formData = new FormData();
-            formData.append("image", file);
-
-            fetch("{{ route('admin.setting.saveLogo') }}", {
-                method: "POST",
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Upload failed');
-                return response.json();
-            })
-            .then(data => {
-                alert("Upload successful");
-                location.reload();
-            })
-            .catch(error => {
-                alert("Upload failed");
-                console.error(error);
+            dropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropzone.classList.add("bg-gray-200");
             });
-        }
 
-        // Optional: form submission override (if needed)
-        const form = document.querySelector("form[action='{{ route('admin.setting.save') }}']");
-        if (form) {
-            form.addEventListener("submit", function (e) {
-            e.preventDefault();
+            dropzone.addEventListener("dragleave", () => {
+                dropzone.classList.remove("bg-gray-200");
+            });
 
-                const formData = new FormData(form);
-                fetch(form.action, {
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("bg-gray-200");
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    uploadImage(files[0]);
+                }
+            });
+
+            inputFile.addEventListener("change", function () {
+                if (this.files.length > 0) {
+                    uploadImage(this.files[0]);
+                }
+            });
+
+            function uploadImage(file) {
+                const formData = new FormData();
+                formData.append("image", file);
+
+                fetch("{{ route('admin.setting.saveLogo') }}", {
                     method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    alert("Settings saved!");
-                    console.log(data);
-                })
-                .catch(error => {
-                    alert("Failed to save settings.");
-                    console.error(error);
+                    .then(response => {
+                        if (!response.ok) throw new Error('Upload failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        alert("Upload successful");
+                        location.reload();
+                    })
+                    .catch(error => {
+                        alert("Upload failed");
+                        console.error(error);
+                    });
+            }
+
+            // Optional: form submission override (if needed)
+            const form = document.querySelector("form[action='{{ route('admin.setting.save') }}']");
+            if (form) {
+                form.addEventListener("submit", function (e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(form);
+                    fetch(form.action, {
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert("Settings saved!");
+                            console.log(data);
+                        })
+                        .catch(error => {
+                            alert("Failed to save settings.");
+                            console.error(error);
+                        });
                 });
+            }
+        });
+
+
+       $('body').on('submit', '#uploadForm', function (e) {
+    e.preventDefault();
+    $('#loadding').show();
+
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+    const fileInput = $('#jsonFile')[0].files[0];
+    if (!fileInput) return alert("Please select a JSON file.");
+
+    const reader = new FileReader();
+    reader.onload = function () {
+        let jsonData = JSON.parse(reader.result);
+        if (jsonData.leadsData) jsonData = jsonData.leadsData; // ✅ fallback
+        uploadChunks(jsonData, csrfToken);
+    };
+    reader.readAsText(fileInput);
+});
+
+function uploadChunks(data, csrfToken, chunkSize = 100) {
+    const totalChunks = Math.ceil(data.length / chunkSize);
+    let currentChunk = 0;
+
+    function sendChunk() {
+        if (currentChunk < totalChunks) {
+            const start = currentChunk * chunkSize;
+            const end = Math.min(start + chunkSize, data.length);
+            const chunk = data.slice(start, end);
+
+            $.ajax({
+                url: "{{ route('uploadChunks') }}",
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                data: {
+                    chunk: JSON.stringify(chunk),
+                    chunkIndex: currentChunk,
+                    totalChunks: totalChunks
+                },
+                success: function () {
+                    currentChunk++;
+                    $('#progress').text(`Uploading chunk ${currentChunk} of ${totalChunks}...`);
+                    sendChunk(); // continue next chunk
+                },
+                error: function (xhr) {
+                    console.error("Chunk upload failed:", xhr.responseText);
+                    $('#loadding').hide();
+                    alert('Failed to upload chunk ' + (currentChunk + 1));
+                }
             });
+        } else {
+            $('#loadding').hide();
+            $('#progress').text('✅ Upload complete');
         }
-    });
+    }
+
+    sendChunk();
+}
+
     </script>
 @endpush

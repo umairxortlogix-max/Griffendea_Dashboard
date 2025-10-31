@@ -24,7 +24,10 @@ class CRM
     //My Scopes 
     // public static $scopes = 'contacts.readonly contacts.write locations.readonly users.readonly users.write store/setting.readonly locations/customFields.readonly locations/customFields.write locations/customValues.readonly locations/customValues.write opportunities.readonly calendars.write calendars.readonly calendars/events.readonly calendars/events.write calendars/groups.readonly calendars/groups.write calendars/resources.readonly calendars/resources.write opportunities.readonly opportunities.write ';
 
-public static $scopes = 'contacts.readonly contacts.write locations.readonly users.readonly users.write locations/customFields.readonly locations/customFields.write locations/customValues.readonly locations/customValues.write opportunities.readonly opportunities.write calendars.readonly calendars.write calendars/events.readonly calendars/events.write calendars/groups.readonly calendars/groups.write calendars/resources.readonly calendars/resources.write invoices/estimate.readonly invoices/template.write invoices/template.readonly invoices/schedule.write invoices/schedule.readonly invoices.write invoices.readonly';
+// public static $scopes = 'contacts.readonly contacts.write locations.readonly users.readonly users.write locations/customFields.readonly locations/customFields.write locations/customValues.readonly locations/customValues.write opportunities.readonly opportunities.write calendars.readonly calendars.write calendars/events.readonly calendars/events.write calendars/groups.readonly calendars/groups.write calendars/resources.readonly calendars/resources.write invoices/estimate.readonly invoices/template.write invoices/template.readonly invoices/schedule.write invoices/schedule.readonly invoices.write invoices.readonly';
+
+ public static $scopes = 'contacts.readonly contacts.write locations.readonly locations/customValues.readonly locations/customValues.write locations/customFields.readonly locations/customFields.write locations/tags.readonly locations/tags.write opportunities.readonly opportunities.write users.readonly';
+
  
  
 

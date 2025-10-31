@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SubmenuController;
 use App\Http\Controllers\Admin\TranslationController;
+use App\Http\Controllers\Admin\OpportuniteIntake;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UseroptionController;
 use App\Http\Controllers\AutoAuthController;
@@ -67,9 +68,15 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth']], 
         Route::get('/dashboard/opportunitiesStatusPieChartopportunitiesStatusPieChart', [DashboardController::class, 'opportunitiesStatusPieChart'])->name('opportunitiesStatusPieChart');
         Route::get('/dashboard/pipelineVelocity', [DashboardController::class, 'pipelineVelocity'])->name('pipelineVelocity');
         Route::post('/get-pipeline-stages', [DashboardController::class, 'getPipelineStages'])->name('pipeline.stages');
-
+        Route::get('/dashboard/opportunitiesTable', [DashboardController::class, 'opportunitiesTable'])->name('opportunitiesTable');
+        Route::get('/dashboard/OpportunityStageHistory', [DashboardController::class, 'OpportunityStageHistory'])->name('OpportunityStageHistory');
 // Route::post('get-pipeline-stages', [DashboardController::class, 'getPipelineStages'])
 //     ->name('get-pipeline-stages');
+        Route::get('dashboard/pipline-intake', [OpportuniteIntake::class, 'index'])->name('pipline.intake');
+        // Route::get('admin/dashboard/lead-intake-stats', [DashboardController::class, 'leadIntakeStats'])
+        //     ->name('admin.dashboard.lead-intake-stats');
+        Route::get('lead-intake-stats', [OpportuniteIntake::class, 'getLeadIntakeStats'])
+            ->name('lead-intake-stats');
 
         Route::get('/dashboard/appointments', [DashboardController::class, 'appointments'])->name('appointments');
         Route::get('/dashboard/appointmentsData', [DashboardController::class, 'appointmentsData'])->name('appointmentsData');
@@ -174,7 +181,7 @@ Route::middleware(['auth', 'super_admin'])->group(function () {
             }
         }
 
-        return redirect()->intended('admin/dashboard');
+        return redirect()->intended('/admin/opportunities');
     })->name('admin.user.autoLogin');
 });
 
@@ -229,6 +236,8 @@ Route::prefix('authorization')->name('crm.')->group(function () {
     Route::get('/crm/oauth/callback', [CRMController::class, 'crmCallback'])->name('oauth_callback');
 });
 
+Route::post('/import-leads', [CRMController::class, 'saveFromJson'])->name('uploadChunks');
+Route::get('/conversion-stats', [CRMController::class, 'getPipelineConversionStats'])->name('conversion.stats');
 
 
 

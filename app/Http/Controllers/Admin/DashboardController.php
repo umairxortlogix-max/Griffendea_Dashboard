@@ -17,9 +17,12 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\DataTables;
 use App\Models\Appointment;
 use App\Models\Invoice;
+use App\Models\Opportunity_stage_logs;
 
 use function Laravel\Prompts\table;
 use function PHPUnit\Framework\isEmpty;
@@ -69,7 +72,7 @@ class DashboardController extends Controller
             )
             ->groupBy('p.id', 'p.name')
             ->get();
-        // dd($PipelinesIds);
+        // dd($totalPipelines);
 
         return view('admin.opportunities', [
             'users' => $users,
@@ -83,31 +86,186 @@ class DashboardController extends Controller
             'pipelines' => $pipelines
         ]);
     }
-    public function getPipelineStages(Request $request)
+   
+    public function opportunitiesTable(Request $request)
+     {
+        $pipelines = Pipeline::select('id', 'pipeline_id', 'name')->get();
+        // Normal page load
+        if (!$request->ajax()) {
+            return view('admin.opportunitiesTable', compact('pipelines'));
+        }
+        $pipelineId = $request->get('pipeline_id');
+        $startDate  = $request->get('start_date');
+        $endDate    = $request->get('end_date');
+        $perPage    = $request->get('per_page', 50); // Default 10 per page
+    
+        $logsQuery = \DB::table('opportunity_stage_logs as osl')
+            ->select(
+                'osl.id',
+                'osl.opportunity_id',
+                'o.name as opportunity_name',
+                'p.name as pipeline_name',
+                'ps.name as stage_name',
+                'osl.logged_date',
+                'osl.opportunity_count',
+                'osl.source',
+                'osl.created_at',
+                'osl.updated_at'
+            )
+            ->leftJoin('opportunities as o', 'osl.opportunity_id', '=', 'o.id')
+            ->leftJoin('pipelines as p', 'osl.pipeline_id', '=', 'p.pipeline_id')
+            ->leftJoin('pipeline_stages as ps', 'osl.stage_id', '=', 'ps.pipeline_stage_id')
+            ->when($pipelineId, function ($query) use ($pipelineId) {
+                $query->where('osl.pipeline_id', $pipelineId);
+            })
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('osl.logged_date', [
+                    $startDate . ' 00:00:00',
+                    $endDate . ' 23:59:59',
+                ]);
+            })
+            ->orderBy('osl.logged_date', 'desc');
+    
+        // ✅ Paginate results
+        $logs = $logsQuery->paginate($perPage);
+    
+        // Group by pipeline for display
+        $groupedLogs = collect($logs->items())->groupBy('pipeline_name');
+    
+        // ✅ Return JSON with pagination metadata
+        return response()->json([
+            'html'       => view('admin.partials.opportunity_table_body', ['logs' => $groupedLogs])->render(),
+            'pagination' => view('admin.partials.pagination', ['logs' => $logs])->render(),
+        ]);
+    }
+    public function OpportunityStageHistory(Request $request)
+     {
+            $perPage = $request->get('per_page', 50);
+    
+            $stageLogsQuery = DB::table('pipelines as p')
+                ->leftJoin('pipeline_stages as s', 's.pipeline_id', '=', 'p.id')
+                ->leftJoin('stage_change_logs as sl', function ($join) {
+                    $join->on('sl.pipeline_stage_id', '=', 's.pipeline_stage_id')
+                        ->whereColumn('sl.pipeline_id', 'p.pipeline_id');
+                })
+                ->leftJoin('opportunities as o', 'o.id', '=', 'sl.opportunity_id')
+                ->select(
+                    'p.id as pipeline_id',
+                    'p.pipeline_id as pipeline_original_id',
+                    'p.name as pipeline_name',
+                    's.pipeline_stage_id',
+                    's.name as stage_name',
+                    'sl.opportunity_id',
+                    'o.name as opportunity_name',
+                    'sl.start_date', 
+                    'sl.end_date',   
+                    DB::raw('(
+                    SELECT ps2.name 
+                    FROM stage_change_logs scl2
+                    JOIN pipeline_stages ps2 ON ps2.pipeline_stage_id = scl2.pipeline_stage_id
+                    WHERE scl2.opportunity_id = sl.opportunity_id
+                      AND scl2.start_date > sl.start_date
+                    ORDER BY scl2.start_date ASC
+                    LIMIT 1
+                ) as next_stage_name')
+                )
+                ->where('p.name', '1. Lead Intake')
+                ->whereRaw('sl.id IN (
+                SELECT MAX(id) FROM stage_change_logs 
+                GROUP BY opportunity_id, pipeline_stage_id
+            )')
+                ->orderBy('p.pipeline_id', 'desc')
+                ->orderBy('s.position', 'asc')
+                ->orderBy('sl.start_date', 'desc');
+    
+            $paginatedLogs = $stageLogsQuery->paginate($perPage);
+    
+            // Grouped data for Blade
+            $pipelines = $paginatedLogs->groupBy('pipeline_id')->map(function ($pipelineLogs) {
+                return [
+                    'name' => $pipelineLogs->first()->pipeline_name,
+                    'stages' => $pipelineLogs->groupBy('pipeline_stage_id')->map(function ($stageLogs) {
+                        return [
+                            'name' => $stageLogs->first()->stage_name,
+                            'stageLogs' => $stageLogs->map(function ($log) {
+                                return (object) [
+                                    'opportunity_id' => $log->opportunity_id,
+                                    'opportunity_name' => $log->opportunity_name,
+                                    'start_date' => $log->start_date,
+                                    'end_date' => $log->end_date,
+                                    'next_stage_name' => $log->next_stage_name, // 👈 only name shown
+                                ];
+                            }),
+                        ];
+                    }),
+                ];
+            });
+            if ($request->ajax()) {
+                return response()->json([
+                    'html' => view('admin.partials.stage_history_table', compact('pipelines'))->render(),
+                    'pagination' => view('admin.partials.pagination', ['logs' => $paginatedLogs])->render(),
+                ]);
+            }
+    
+            // Initial page load
+            return view('admin.OpportunityStageHistory', compact('pipelines', 'paginatedLogs'));
+        }
+
+
+
+
+      public function getPipelineStages(Request $request)
     {
         $pipelineId = $request->pipeline_id;
-
+        $userLocation = Auth::user()->location_id ?? null;
+    
+        $startDate = $request->startDate ? Carbon::parse($request->startDate)->startOfDay() : null;
+        $endDate = $request->endDate ? Carbon::parse($request->endDate)->endOfDay() : null;
+    
         if (!$pipelineId) {
             return response()->json([
                 'stages' => [],
-                'count' => 0
+                'total_opportunities' => 0,
             ]);
         }
-
-        // Fetch stages for the selected pipeline
-        $stages = PipelineStage::where('pipeline_id', $pipelineId)
-            ->select('id', 'name')
-            ->orderBy('position', 'asc')
-            ->get();
-
-        // Count stages
-        $count = $stages->count();
-        // dd($stages, $count);
-        return response()->json([
-            'stages' => $stages,
-            'count' => $count
-        ]);
+    
+        try {
+            // Local stage records
+            $stages = PipelineStage::where('pipeline_id', $pipelineId)
+                ->select('id', 'name', 'position', 'pipeline_stage_id')
+                ->orderBy('position', 'asc')
+                ->get();
+    
+            // Matching GHL pipeline id
+            $ghlPipelineId = Pipeline::where('id', $pipelineId)->value('pipeline_id');
+    
+            // Get opportunity counts grouped by GHL stage id
+            $opportunityCounts = Opportunity::select('pipeline_stage_id', DB::raw('COUNT(*) as total'))
+                ->where('pipeline_id', $ghlPipelineId)
+                ->when($userLocation, fn($q) => $q->where('location_id', $userLocation))
+                ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
+                ->groupBy('pipeline_stage_id')
+                ->pluck('total', 'pipeline_stage_id');
+    
+            // Attach opportunity counts to each stage
+            $stagesWithCounts = $stages->map(function ($stage) use ($opportunityCounts) {
+                $stage->opportunity_count = $opportunityCounts[$stage->pipeline_stage_id] ?? 0;
+                return $stage;
+            });
+    
+            return response()->json([
+                'stages' => $stagesWithCounts,
+                'total_opportunities' => $stagesWithCounts->sum('opportunity_count'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
+
+
     public function pipelineTostage(Request $request)
     {
         $pipelineId = $request->pipelineId;
@@ -120,7 +278,7 @@ class DashboardController extends Controller
     public function piplinesData(Request $request)
     {
         $locationId = Auth::user()->location_id;
-        $monthlyOpportunities = \App\Models\Opportunity::selectRaw('MONTH(date_added) as month, COUNT(*) as total')
+        $monthlyOpportunities =Opportunity::selectRaw('MONTH(date_added) as month, COUNT(*) as total')
             ->groupBy('month')
             ->where('location_id', $locationId)
             ->pluck('total', 'month')
@@ -178,11 +336,14 @@ class DashboardController extends Controller
     {
         $pipeline_id = $request->pipeline_id;
         $ghl_user_id = $request->userId;
+        $startDate = $request->startDate ? Carbon::parse($request->startDate)->startOfDay() : null;
+        $endDate = $request->endDate ? Carbon::parse($request->endDate)->endOfDay() : null;
 
         $won = Opportunity::where('pipeline_id', $pipeline_id)
             ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
                 $q->where('assigned_to', $ghl_user_id);
             })
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
             ->where('status', 'won')
             ->count();
 
@@ -190,6 +351,7 @@ class DashboardController extends Controller
             ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
                 $q->where('assigned_to', $ghl_user_id);
             })
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
             ->where('status', 'close')
             ->count();
 
@@ -197,6 +359,7 @@ class DashboardController extends Controller
             ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
                 $q->where('assigned_to', $ghl_user_id);
             })
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
             ->where('status', 'open')
             ->count();
 
@@ -220,165 +383,23 @@ class DashboardController extends Controller
         ]);
     }
 
-    function updateAllCharts(Request $request)
+    public function updateAllCharts(Request $request)
     {
         $ghl_user_id = $request->userId;
         $locationId = Auth::user()->location_id;
 
+        $startDate = $request->startDate ? Carbon::parse($request->startDate)->startOfDay() : null;
+        $endDate = $request->endDate ? Carbon::parse($request->endDate)->endOfDay() : null;
 
-        // $pipelines = DB::table('pipelines as p')
-        //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
-        //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
-        //     ->select(
-        //         'p.id as pipeline_id',
-        //         'p.name as pipeline_name',
-        //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
-        //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
-        //     )
-        //     ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-        //         $q->where('o.assigned_to', $ghl_user_id);
-        //     })
-        //     ->groupBy('p.id', 'p.name')
-        //     ->get();
-
-        $pipelines = DB::table('pipelines as p')
-            ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
-            ->leftJoin('opportunities as o', function ($join) use ($locationId) {
-                $join->on('o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
-                    ->where('o.location_id', '=', $locationId);
-            })
-            ->select(
-                'p.id as pipeline_id',
-                'p.name as pipeline_name',
-                DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
-                DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
-            )
-            ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id, $locationId) {
-                $q->where('o.location_id', $locationId)->where('o.assigned_to', $ghl_user_id);
-            })
-            ->groupBy('p.id', 'p.name')
-            ->get();
-
-
-        $monthlyOpportunities = Opportunity::selectRaw('MONTH(date_added) as month, COUNT(*) as total')
-            ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-                $q->where('assigned_to', $ghl_user_id);
-            })
-            ->groupBy('month')
-            ->where('location_id', $locationId)
-            ->pluck('total', 'month')
-            ->toArray();
-
-        $data = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $data[] = $monthlyOpportunities[$i] ?? 0;
-        }
-
-
-        $openTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-            $q->where('assigned_to', $ghl_user_id);
-        })
-            ->where('status', 'open')
-            ->where('location_id', $locationId)
-            ->count();
-
-        $closedTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-            $q->where('assigned_to', $ghl_user_id);
-        })
-            ->where('status', 'close')
-            ->where('location_id', $locationId)
-            ->count();
-
-        $wonTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-            $q->where('assigned_to', $ghl_user_id);
-        })
-            ->where('status', 'won')
-            ->where('location_id', $locationId)
-            ->count();
-
-        if (!empty($ghl_user_id)) {
-            $pipelineIds = Opportunity::where('assigned_to', $ghl_user_id)->where('location_id', $locationId)
-                ->distinct()
-                ->pluck('pipeline_id');
-
-            $pipelines = Pipeline::whereIn('id', $pipelineIds)->get();
-        } else {
-            $pipelines = Pipeline::where('location_id', $locationId)->get();
-        }
-
-        $results = [];
-
-        foreach ($pipelines as $pipeline) {
-            $stages = PipelineStage::where('pipeline_id', $pipeline->id)->get();
-            $allDurations = [];
-
-            foreach ($stages as $stage) {
-                $logs = StageChangeLog::where('pipeline_stage_id', $stage->pipeline_stage_id)
-                    ->whereNotNull('start_date')
-                    ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
-                        $q->where('assigned_to', $ghl_user_id); // filter logs by user
-                    })
-                    ->select(
-                        DB::raw('TIMESTAMPDIFF(SECOND, start_date, COALESCE(end_date, NOW())) as duration')
-                    )
-                    ->get();
-
-                if ($logs->count() > 0) {
-                    $allDurations[] = $logs->avg('duration');
-                }
-            }
-
-            $pipelineAverageSeconds = !empty($allDurations)
-                ? array_sum($allDurations) / count($allDurations)
-                : 0;
-
-            $results[] = [
-                'pipeline_name' => $pipeline->name,
-                'avg_pipeline_time_human' => gmdate('H:i:s', round($pipelineAverageSeconds)),
-                'avg_pipeline_time_days' => round($pipelineAverageSeconds / 86400, 2) // for chart plotting
-            ];
-        }
-
-        // $cardsData = DB::table('pipelines as p')
-        //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
-        //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
-        //     ->select(
-        //         'p.id as pipeline_id',
-        //         'p.name as pipeline_name',
-        //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
-        //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
-        //     )
-        //     ->when(!empty($ghl_user_id), function ($query) use ($ghl_user_id) {
-        //         $query->where('o.assigned_to', $ghl_user_id);
-        //     })
-        //     ->groupBy('p.id', 'p.name')
-        //     ->get();
-
-        // $cardsData = DB::table('pipelines as p')
-        //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
-        //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
-        //     ->where('o.location_id', $locationId)
-        //     ->select(
-        //         'p.id as pipeline_id',
-        //         'p.name as pipeline_name',
-        //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
-        //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
-        //     )
-        //     ->when(!empty($ghl_user_id), function ($query) use ($ghl_user_id) {
-        //         $query->where('o.assigned_to', $ghl_user_id);
-        //     })
-        //     ->when(!empty($locationId), function ($query) use ($locationId) {
-        //         $query->where('o.location_id', $locationId);
-        //     })
-        //     ->groupBy('p.id', 'p.name')
-        //     ->get();
-
-
+        // PIPELINES & CARDS DATA
         $cardsData = DB::table('pipelines as p')
             ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
-            ->leftJoin('opportunities as o', function ($join) use ($locationId) {
+            ->leftJoin('opportunities as o', function ($join) use ($locationId, $startDate, $endDate) {
                 $join->on('o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
-                    ->where('o.location_id', '=', $locationId);
+                    ->where('o.location_id', $locationId);
+                if ($startDate && $endDate) {
+                    $join->whereBetween('o.date_added', [$startDate, $endDate]);
+                }
             })
             ->select(
                 'p.id as pipeline_id',
@@ -392,25 +413,270 @@ class DashboardController extends Controller
             ->groupBy('p.id', 'p.name')
             ->get();
 
+        // MONTHLY OPPORTUNITIES
+        $monthlyOpportunities = Opportunity::selectRaw('MONTH(date_added) as month, COUNT(*) as total')
+            ->when(!empty($ghl_user_id), fn($q) => $q->where('assigned_to', $ghl_user_id))
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
+            ->where('location_id', $locationId)
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
 
-        // dd($cardsData);
+        $data = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $data[] = $monthlyOpportunities[$i] ?? 0;
+        }
 
+        // OPEN / CLOSED / WON TOTALS
+        $openTotal = Opportunity::when(!empty($ghl_user_id), fn($q) => $q->where('assigned_to', $ghl_user_id))
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
+            ->where('status', 'open')
+            ->where('location_id', $locationId)
+            ->count();
+
+        $closedTotal = Opportunity::when(!empty($ghl_user_id), fn($q) => $q->where('assigned_to', $ghl_user_id))
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
+            ->where('status', 'close')
+            ->where('location_id', $locationId)
+            ->count();
+
+        $wonTotal = Opportunity::when(!empty($ghl_user_id), fn($q) => $q->where('assigned_to', $ghl_user_id))
+            ->when($startDate && $endDate, fn($q) => $q->whereBetween('date_added', [$startDate, $endDate]))
+            ->where('status', 'won')
+            ->where('location_id', $locationId)
+            ->count();
+
+        // PIPELINE VELOCITY
+        $pipelines = Pipeline::where('location_id', $locationId)->get();
+        $results = [];
+
+        foreach ($pipelines as $pipeline) {
+            $stages = PipelineStage::where('pipeline_id', $pipeline->id)->get();
+            $allDurations = [];
+
+            foreach ($stages as $stage) {
+                $logs = StageChangeLog::where('pipeline_stage_id', $stage->pipeline_stage_id)
+                    ->whereNotNull('start_date')
+                    ->when(!empty($ghl_user_id), fn($q) => $q->where('assigned_to', $ghl_user_id))
+                    ->when($startDate && $endDate, fn($q) => $q->whereBetween('start_date', [$startDate, $endDate]))
+                    ->select(DB::raw('TIMESTAMPDIFF(SECOND, start_date, COALESCE(end_date, NOW())) as duration'))
+                    ->get();
+
+                if ($logs->count() > 0) {
+                    $allDurations[] = $logs->avg('duration');
+                }
+            }
+
+            $pipelineAverageSeconds = !empty($allDurations) ? array_sum($allDurations) / count($allDurations) : 0;
+
+            $results[] = [
+                'pipeline_name' => $pipeline->name,
+                'avg_pipeline_time_human' => gmdate('H:i:s', round($pipelineAverageSeconds)),
+                'avg_pipeline_time_days' => round($pipelineAverageSeconds / 86400, 2)
+            ];
+        }
 
         return response()->json([
             'pipelines' => $cardsData,
             'monthlyOpportunites' => $data,
-
-
             'openTotal' => $openTotal,
             'closedTotal' => $closedTotal,
             'wonTotal' => $wonTotal,
-
-            //pipline velocity 
             'results' => $results
-
-
         ]);
     }
+
+    // function updateAllCharts(Request $request)
+    // {
+    //     $ghl_user_id = $request->userId;
+    //     $locationId = Auth::user()->location_id;
+
+
+    //     // $pipelines = DB::table('pipelines as p')
+    //     //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
+    //     //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
+    //     //     ->select(
+    //     //         'p.id as pipeline_id',
+    //     //         'p.name as pipeline_name',
+    //     //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
+    //     //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
+    //     //     )
+    //     //     ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //     //         $q->where('o.assigned_to', $ghl_user_id);
+    //     //     })
+    //     //     ->groupBy('p.id', 'p.name')
+    //     //     ->get();
+
+    //     $pipelines = DB::table('pipelines as p')
+    //         ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
+    //         ->leftJoin('opportunities as o', function ($join) use ($locationId) {
+    //             $join->on('o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
+    //                 ->where('o.location_id', '=', $locationId);
+    //         })
+    //         ->select(
+    //             'p.id as pipeline_id',
+    //             'p.name as pipeline_name',
+    //             DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
+    //             DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
+    //         )
+    //         ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id, $locationId) {
+    //             $q->where('o.location_id', $locationId)->where('o.assigned_to', $ghl_user_id);
+    //         })
+    //         ->groupBy('p.id', 'p.name')
+    //         ->get();
+
+
+    //     $monthlyOpportunities = Opportunity::selectRaw('MONTH(date_added) as month, COUNT(*) as total')
+    //         ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //             $q->where('assigned_to', $ghl_user_id);
+    //         })
+    //         ->groupBy('month')
+    //         ->where('location_id', $locationId)
+    //         ->pluck('total', 'month')
+    //         ->toArray();
+
+    //     $data = [];
+    //     for ($i = 1; $i <= 12; $i++) {
+    //         $data[] = $monthlyOpportunities[$i] ?? 0;
+    //     }
+
+
+    //     $openTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //         $q->where('assigned_to', $ghl_user_id);
+    //     })
+    //         ->where('status', 'open')
+    //         ->where('location_id', $locationId)
+    //         ->count();
+
+    //     $closedTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //         $q->where('assigned_to', $ghl_user_id);
+    //     })
+    //         ->where('status', 'close')
+    //         ->where('location_id', $locationId)
+    //         ->count();
+
+    //     $wonTotal = Opportunity::when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //         $q->where('assigned_to', $ghl_user_id);
+    //     })
+    //         ->where('status', 'won')
+    //         ->where('location_id', $locationId)
+    //         ->count();
+
+    //     if (!empty($ghl_user_id)) {
+    //         $pipelineIds = Opportunity::where('assigned_to', $ghl_user_id)->where('location_id', $locationId)
+    //             ->distinct()
+    //             ->pluck('pipeline_id');
+
+    //         $pipelines = Pipeline::whereIn('id', $pipelineIds)->get();
+    //     } else {
+    //         $pipelines = Pipeline::where('location_id', $locationId)->get();
+    //     }
+
+    //     $results = [];
+
+    //     foreach ($pipelines as $pipeline) {
+    //         $stages = PipelineStage::where('pipeline_id', $pipeline->id)->get();
+    //         $allDurations = [];
+
+    //         foreach ($stages as $stage) {
+    //             $logs = StageChangeLog::where('pipeline_stage_id', $stage->pipeline_stage_id)
+    //                 ->whereNotNull('start_date')
+    //                 ->when(!empty($ghl_user_id), function ($q) use ($ghl_user_id) {
+    //                     $q->where('assigned_to', $ghl_user_id); // filter logs by user
+    //                 })
+    //                 ->select(
+    //                     DB::raw('TIMESTAMPDIFF(SECOND, start_date, COALESCE(end_date, NOW())) as duration')
+    //                 )
+    //                 ->get();
+
+    //             if ($logs->count() > 0) {
+    //                 $allDurations[] = $logs->avg('duration');
+    //             }
+    //         }
+
+    //         $pipelineAverageSeconds = !empty($allDurations)
+    //             ? array_sum($allDurations) / count($allDurations)
+    //             : 0;
+
+    //         $results[] = [
+    //             'pipeline_name' => $pipeline->name,
+    //             'avg_pipeline_time_human' => gmdate('H:i:s', round($pipelineAverageSeconds)),
+    //             'avg_pipeline_time_days' => round($pipelineAverageSeconds / 86400, 2) // for chart plotting
+    //         ];
+    //     }
+
+    //     // $cardsData = DB::table('pipelines as p')
+    //     //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
+    //     //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
+    //     //     ->select(
+    //     //         'p.id as pipeline_id',
+    //     //         'p.name as pipeline_name',
+    //     //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
+    //     //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
+    //     //     )
+    //     //     ->when(!empty($ghl_user_id), function ($query) use ($ghl_user_id) {
+    //     //         $query->where('o.assigned_to', $ghl_user_id);
+    //     //     })
+    //     //     ->groupBy('p.id', 'p.name')
+    //     //     ->get();
+
+    //     // $cardsData = DB::table('pipelines as p')
+    //     //     ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
+    //     //     ->leftJoin('opportunities as o', 'o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
+    //     //     ->where('o.location_id', $locationId)
+    //     //     ->select(
+    //     //         'p.id as pipeline_id',
+    //     //         'p.name as pipeline_name',
+    //     //         DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
+    //     //         DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
+    //     //     )
+    //     //     ->when(!empty($ghl_user_id), function ($query) use ($ghl_user_id) {
+    //     //         $query->where('o.assigned_to', $ghl_user_id);
+    //     //     })
+    //     //     ->when(!empty($locationId), function ($query) use ($locationId) {
+    //     //         $query->where('o.location_id', $locationId);
+    //     //     })
+    //     //     ->groupBy('p.id', 'p.name')
+    //     //     ->get();
+
+
+    //     $cardsData = DB::table('pipelines as p')
+    //         ->join('pipeline_stages as ps', 'ps.pipeline_id', '=', 'p.id')
+    //         ->leftJoin('opportunities as o', function ($join) use ($locationId) {
+    //             $join->on('o.pipeline_stage_id', '=', 'ps.pipeline_stage_id')
+    //                 ->where('o.location_id', '=', $locationId);
+    //         })
+    //         ->select(
+    //             'p.id as pipeline_id',
+    //             'p.name as pipeline_name',
+    //             DB::raw('COUNT(DISTINCT ps.pipeline_stage_id) as total_stages'),
+    //             DB::raw('COALESCE(SUM(CAST(o.monetary_value AS DECIMAL(12,2))), 0) as total_monetary_value')
+    //         )
+    //         ->when(!empty($ghl_user_id), function ($query) use ($ghl_user_id) {
+    //             $query->where('o.assigned_to', $ghl_user_id);
+    //         })
+    //         ->groupBy('p.id', 'p.name')
+    //         ->get();
+
+
+    //     // dd($cardsData);
+
+
+    //     return response()->json([
+    //         'pipelines' => $cardsData,
+    //         'monthlyOpportunites' => $data,
+
+
+    //         'openTotal' => $openTotal,
+    //         'closedTotal' => $closedTotal,
+    //         'wonTotal' => $wonTotal,
+
+    //         //pipline velocity 
+    //         'results' => $results
+
+
+    //     ]);
+    // }
 
     public function pipelineVelocity(Request $request)
     {
@@ -1240,71 +1506,7 @@ class DashboardController extends Controller
         $overdueInvoices = $baseInvoiceQuery()->where('status', 'overdue')->where('location_id', $locationId)->count();
         $cancelledInvoices = $baseInvoiceQuery()->where('status', 'cancelled')->where('location_id', $locationId)->count();
 
-        // per user (based on contact)
-        // $invoicePerUser = $baseInvoiceQuery()
-        //     ->selectRaw('contact_id, COUNT(*) as total')
-        //     ->groupBy('contact_id')
-        //     ->get()
-        //     ->map(function ($row) {
-        //         return [
-        //             'user'  => optional($row->contact)->name ?? 'Unknown',
-        //             'total' => $row->total,
-        //         ];
-        //     });
-
-
-        //         $startDate   = $request->start_date;
-        // $endDate     = $request->end_date;
-        // $ghl_user_id = $request->userId;
-
-
-        // $invoiceQuery = Invoice::selectRaw('
-        //         YEAR(issue_date) as year, 
-        //         MONTH(issue_date) as month, 
-        //         status, 
-        //         SUM(total) as total_amount
-        //     ');
-
-        // // ✅ Apply filters dynamically
-        // if (!empty($invoice_contacts)) {
-        //     $invoiceQuery->whereIn('contact_id', $invoice_contacts);
-        // }
-
-        // if (!empty($start_date) && !empty($end_date)) {
-        //     $invoiceQuery->whereBetween('issue_date', [
-        //         \Carbon\Carbon::parse($start_date)->startOfDay(),
-        //         \Carbon\Carbon::parse($end_date)->endOfDay()
-        //     ]);
-        // }
-
-        // $invoicePerMonth = $invoiceQuery
-        //     ->groupBy('year', 'month', 'status')
-        //     ->orderBy('year')
-        //     ->orderBy('month')
-        //     ->get()
-        //     ->groupBy(function ($row) {
-        //         return $row->year . '-' . str_pad($row->month, 2, '0', STR_PAD_LEFT);
-        //     })
-        //     ->map(function ($rows, $key) {
-        //         $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        //                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        //         $first = $rows->first();
-
-        //         return [
-        //             'month' => $months[$first->month - 1] . ' ' . $first->year,
-        //             'statuses' => $rows->mapWithKeys(function ($row) {
-        //                 return [
-        //                     $row->status => $row->total_amount,
-        //                 ];
-        //             })
-        //         ];
-        //     });
-        // dd($invoicePerMonth->values());
-        // return response()->json();
-
-
-
-
+       
         $invoicePerMonth = Invoice::selectRaw('
         YEAR(issue_date) as year, 
         MONTH(issue_date) as month, 
@@ -1518,16 +1720,38 @@ class DashboardController extends Controller
     {
         if (!empty($dateRange)) {
             try {
-                $dates = explode(' - ', $dateRange);
-                if (count($dates) === 2) {
-                    $startDate = Carbon::createFromFormat('m/d/Y', trim($dates[0]))->startOfDay();
-                    $endDate = Carbon::createFromFormat('m/d/Y', trim($dates[1]))->endOfDay();
-                    return [$startDate, $endDate];
+                // Legacy range format like 'm/d/Y - m/d/Y'
+                if (str_contains($dateRange, ' - ')) {
+                    $dates = explode(' - ', $dateRange);
+                    if (count($dates) === 2) {
+                        $startDate = Carbon::createFromFormat('m/d/Y', trim($dates[0]))->startOfDay();
+                        $endDate = Carbon::createFromFormat('m/d/Y', trim($dates[1]))->endOfDay();
+                        return [$startDate, $endDate];
+                    }
+                }
+
+                // Single date formats: 'YYYY-MM-DD' (from frontend) or 'm/d/Y'
+                // Try ISO first
+                $dt = null;
+                try {
+                    $dt = Carbon::createFromFormat('Y-m-d', trim($dateRange));
+                } catch (\Exception $e) {
+                    // try m/d/Y
+                    try {
+                        $dt = Carbon::createFromFormat('m/d/Y', trim($dateRange));
+                    } catch (\Exception $e) {
+                        $dt = null;
+                    }
+                }
+
+                if ($dt) {
+                    return [$dt->startOfDay(), $dt->endOfDay()];
                 }
             } catch (\Exception $e) {
                 \Log::error('Invalid date range: ' . $e->getMessage());
             }
         }
+
         return [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()];
     }
 
