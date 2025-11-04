@@ -38,14 +38,7 @@ Route::get('/', function () {
     return view('auth.login');
 });
 Route::post('/login', [UserController::class, 'login'])->name('login');
-Route::get('/db-test', function () {
-    try {
-        \DB::connection()->getPdo();
-        return 'Database connection successful!';
-    } catch (\Exception $e) {
-        return 'Error: ' . $e->getMessage();
-    }
-});
+
 // Utility Routes
 Route::get('flowbite', fn() => view('welcome'));
 Route::get('/cache', function () {
